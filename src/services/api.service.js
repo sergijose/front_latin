@@ -21,14 +21,21 @@ export default function Api(){
             return response;
         },
         (error) => {
-            // error de autenticación
-            if(error.response.status === 401){
-                console.log("INTERCEPTOR ************");
-                localStorage.removeItem("access_token")
-                
-                window.location.href ="/auth/login"
+            if (error.response) {
+                if (error.response.status === 401) {
+                    console.log("INTERCEPTOR ************");
+
+                    // Redirigir solo si el token no es válido o ha expirado
+                    const isLoginRoute = window.location.pathname.includes("/auth/login");
+
+                    if (!isLoginRoute) {
+                        localStorage.removeItem("access_token");
+                        window.location.href = "/auth/login";
+                    }
+                }
             }
-            return Promise.reject(error);
+
+            return Promise.reject(error); // Rechaza el error para que pueda ser manejado por la lógica del componente
         }
     );
 

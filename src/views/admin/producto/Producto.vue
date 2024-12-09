@@ -60,13 +60,13 @@
 </DataTable>
 
 <Dialog v-model:visible="productDialog" :style="{ width: '450px' }" header="Detalle Producto" :modal="true">
-    {{ product }}
+    
             <div class="flex flex-col gap-6">
                 <img v-if="product.image" :src="`https://primefaces.org/cdn/primevue/images/product/${product.image}`" :alt="product.image" class="block m-auto pb-4" />
                 <div>
                     <label for="name" class="block font-bold mb-3">Nombre</label>
                     <InputText id="name" v-model.trim="product.nombre" required="true" autofocus :invalid="submitted && !product.nombre" fluid />
-                    <small v-if="submitted && !product.nombre" class="text-red-500">El nombre es Oblogatorio.</small>
+                    <small v-if="submitted && !product.nombre" class="text-red-500">El nombre es Obligatorio.</small>
                 </div>
                 <div>
                     <label for="description" class="block font-bold mb-3">Descripción</label>
@@ -216,7 +216,7 @@ const getProductos = async () =>{
 }
 
 const getCategorias = async () => {
-    const {data} = await categoriaService.listar();
+    const {data} = await categoriaService.listarCategoria();
 
     categorias.value = data;
 }
@@ -240,9 +240,19 @@ const nuevoProductoConImagen = () => {
 
 const guardarProducto = async () => {
 
-    await productoService.guardar(product.value);
-    productDialog.value = false
-    getProductos();
+    submitted.value = true;
+
+    if (product?.value.nombre?.trim()) {
+        try {
+            await productoService.guardar(product.value);
+            productDialog.value = false
+            getProductos();
+            
+        } catch (error) {
+            console.log("ERROR: ", error);
+        }
+    }
+
 }
 
 const seleccionarImagen = (event) => {
@@ -278,5 +288,17 @@ const editProduct = (datos) => {
     productDialog2.value = true;
 }
 
+const confirmDeleteProduct = async (prod) => {
+    try {
+        if(confirm("¿Está seguro de eliminar el Producto?")){
+            await productoService.eliminar(prod.id);
+    
+            getProductos();
+        }
+        
+    } catch (error) {
+        console.log(error);
+    }
+}
 
 </script>

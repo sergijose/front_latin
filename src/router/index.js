@@ -17,7 +17,7 @@ import ListaPedido from "../views/admin/pedido/lista-pedido/ListaPedido.vue"
 import AppLayout from '@/layout/AppLayout.vue';
 
 const routes = [
-    { path: '/', component: Inicio },
+    { path: '/', component: Login},
     { path: '/servicios', component: Servicios },
     { path: '/nosotros', component: Nosotros },
 

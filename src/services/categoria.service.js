@@ -1,8 +1,8 @@
 import Api from "./api.service"
 
 export default {
-    listar: (q = "") => {
-        return Api().get("/categoria?q="+q);
+    listar: (page = 1, limit = 5, q = "") => {
+        return Api().get(`/categoria?page=${page}&limit=${limit}&q=`+q);
     },
     guardar: (datos) => {
         return Api().post("/categoria", datos);
@@ -16,4 +16,7 @@ export default {
     eliminar: (id) => {
         return Api().delete(`/categoria/${id}`);
     },
+    listarCategoria: () => {
+        return Api().get(`/categoria-listar`);
+    }
 }
