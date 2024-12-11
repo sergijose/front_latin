@@ -13,8 +13,9 @@ import Categoria from "../views/admin/categoria/Categoria.vue"
 import Producto from "../views/admin/producto/Producto.vue"
 import NuevoPedido from "../views/admin/pedido/nuevo-pedido/NuevoPedido.vue"
 import ListaPedido from "../views/admin/pedido/lista-pedido/ListaPedido.vue"
-
+import Proveedor from "../views/admin/proveedor/Proveedor.vue";
 import AppLayout from '@/layout/AppLayout.vue';
+
 
 const routes = [
     { path: '/', component: Login},
@@ -32,6 +33,7 @@ const routes = [
             { path: 'usuario', name: 'Usuario', component: Usuario, meta: {requireAuth: true} },
             { path: 'categoria', name: 'Categoria', component: Categoria, meta: {requireAuth: true} },
             { path: 'producto', name: 'Producto', component: Producto, meta: {requireAuth: true} },
+            { path: 'proveedor', name: 'Proveedor', component: Proveedor, meta: {requireAuth: true} },
             { path: 'pedido/nuevo', name: 'NuevoPedido', component: NuevoPedido, meta: {requireAuth: true} },
             { path: 'pedido', name: 'ListaPedido', component: ListaPedido, meta: {requireAuth: true} },
 
