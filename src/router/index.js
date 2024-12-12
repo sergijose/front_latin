@@ -14,6 +14,7 @@ import Producto from "../views/admin/producto/Producto.vue"
 import NuevoPedido from "../views/admin/pedido/nuevo-pedido/NuevoPedido.vue"
 import ListaPedido from "../views/admin/pedido/lista-pedido/ListaPedido.vue"
 import Proveedor from "../views/admin/proveedor/Proveedor.vue";
+import Empleado from "../views/admin/empleado/empleado.vue";
 import AppLayout from '@/layout/AppLayout.vue';
 
 
@@ -31,6 +32,7 @@ const routes = [
         children: [
             { path: 'perfil', name: 'Perfil', component: Perfil, meta: {requireAuth: true} },
             { path: 'usuario', name: 'Usuario', component: Usuario, meta: {requireAuth: true} },
+            { path: 'empleado', name: 'Empleado', component: Empleado, meta: {requireAuth: true} },
             { path: 'categoria', name: 'Categoria', component: Categoria, meta: {requireAuth: true} },
             { path: 'producto', name: 'Producto', component: Producto, meta: {requireAuth: true} },
             { path: 'proveedor', name: 'Proveedor', component: Proveedor, meta: {requireAuth: true} },

@@ -16,7 +16,7 @@ const model = ref([
         items: [
             { label: 'Usuarios', icon: 'pi pi-fw pi-id-card', to: '/admin/usuario' },
             { label: 'Roles', icon: 'pi pi-fw pi-check-square', to: '/admin/role' },
-            { label: 'Personas', icon: 'pi pi-fw pi-mobile', to: '/admin/persona', class: 'rotated-icon' },
+            { label: 'Empleados', icon: 'pi pi-fw pi-mobile', to: '/admin/empleado', class: 'rotated-icon' },
             
         ]
     },
