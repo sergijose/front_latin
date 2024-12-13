@@ -16,7 +16,7 @@
 
   <div class="card">
     <DataTable ref="dt" dataKey="id" lazy :totalRecords="totalRecords" :value="empleados" :paginator="true" :rows="10"
-      :loading="loading" selection-mode="single" @row-select="onRowSelect"
+      @page="onPage($event)" :loading="loading" selection-mode="single" @row-select="onRowSelect"
       paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
       :rowsPerPageOptions="[3, 10, 25]"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} empleados">
@@ -37,6 +37,20 @@
       <Column field="correo" header="Correo" />
       <Column field="cargo" header="Cargo" sortable />
       <Column field="estado" header="Estado" />
+      <Column field="usuario.name" header="Usuario Asignado">
+    <template #body="slotProps">
+      <span v-if="slotProps.data.usuario && slotProps.data.usuario.name">
+        {{ slotProps.data.usuario.name }}
+      </span>
+      <button 
+        v-else 
+        class="btn btn-primary" 
+        @click="registrarUsuario(slotProps.data)"
+      >
+        Registrar Usuario
+      </button>
+    </template>
+  </Column>
       <Column :exportable="false" style="min-width: 12rem">
         <template #body="slotProps">
           <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editarEmpleado(slotProps.data)" />
@@ -68,7 +82,9 @@
 
       <div class="field col-12">
         <label for="correo">Correo Electrónico</label>
-        <InputText v-model="empleado.correo" required type="email" id="correo" class="w-full" />
+        <InputText v-model="empleado.correo" required type="email" id="correo" class="w-full"
+          :class="{ 'p-invalid': errores.correo }" />
+        <small v-if="errores.correo" class="p-error text-red-500">{{ errores.correo[0] }} </small>
       </div>
 
       <div class="field col-12">
@@ -90,10 +106,9 @@
         <small v-if="errores.estado" class="p-error text-red-500">{{ errores.estado[0] }} </small>
       </div>
     </div>
-
     <template #footer>
       <div class="flex justify-content-end gap-2">
-        <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" class="p-button-text" />
+        <Button label="Cancelar" icon="pi pi-times" text @click="resetForm" class="p-button-text" />
         <Button label="Guardar" icon="pi pi-check" @click="guardarEmpleado" class="p-button-primary" />
       </div>
     </template>
@@ -106,6 +121,7 @@ import { ref, reactive, onMounted, watch } from "vue";
 import empleadoService from "./../../../services/empleado.service";
 import { DataTable, Column, Dialog, InputText, Button, Dropdown } from "primevue";
 import { useToast } from "primevue/usetoast";
+import Swal from 'sweetalert2'
 
 const empleados = ref([]);
 const empleado = ref({})
@@ -136,6 +152,7 @@ watch(empleado, (nuevoEmpleado) => {
   if (nuevoEmpleado.num_documento) errores.value.num_documento = null;
   if (nuevoEmpleado.estado) errores.value.estado = null;
   if (nuevoEmpleado.cargo) errores.value.cargo = null;
+  if (nuevoEmpleado.correo) errores.value.correo = null;
 }, { deep: true });
 
 const cargos = [
@@ -158,7 +175,7 @@ const getEmpleados = async () => {
     console.log(data);
     empleados.value = data.data;
     totalRecords.value = data.total;
-    loading.value = false
+    // loading.value = false
   } catch (error) {
     console.error("Error al cargar empleados:", error);
   } finally {
@@ -170,9 +187,9 @@ const nuevoEmpleado = () => {
   submitted.value = false;
   empleadoDialog.value = true;
 }
-const editarEmpleado = async (datos) => {
-    empleado.value = datos;
-    empleadoDialog.value = true;
+const editarEmpleado = (datos) => {
+  empleado.value = datos;
+  empleadoDialog.value = true;
 }
 
 const onPage = (event) => {
@@ -209,11 +226,43 @@ const guardarEmpleado = async () => {
 }
 
 
+const eliminarEmpleado = async (empleado) => {
+  try {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡No podrás revertir esta acción!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (result.isConfirmed) {
+      await empleadoService.eliminar(empleado.id); // Llamada al servicio para eliminar
+      await getEmpleados(); // Actualizar la lista de categorías
+      await Swal.fire({
+        title: "¡Eliminado!",
+        text: "El empleado ha sido eliminada correctamente.",
+        icon: "success",
+      });
+    }
+  } catch (error) {
+    console.error("Error al eliminar el empleado:", error);
+    Swal.fire({
+      title: "Error",
+      text: "Ocurrió un problema al intentar eliminar el empleado.",
+      icon: "error",
+    });
+  }
+};
+
 const resetForm = () => {
   submitted.value = false; // Reinicia la validación del frontend
-  errors.value = {};       // Limpia los errores del backend
-  categoria.value = {};    // Reinicia el modelo de la categoría
-  visible_categoria.value = false; // Cierra el modal
+  errores.value = {};       // Limpia los errores del backend
+  empleado.value = {};    // Reinicia el modelo de la categoría
+  empleadoDialog.value = false; // Cierra el modal
 };
 
 </script>
