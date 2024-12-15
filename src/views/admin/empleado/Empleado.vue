@@ -38,23 +38,21 @@
       <Column field="cargo" header="Cargo" sortable />
       <Column field="estado" header="Estado" />
       <Column field="usuario.name" header="Usuario Asignado">
-    <template #body="slotProps">
-      <span v-if="slotProps.data.usuario && slotProps.data.usuario.name">
-        {{ slotProps.data.usuario.name }}
-      </span>
-      <button 
-        v-else 
-        class="btn btn-primary" 
-        @click="registrarUsuario(slotProps.data)"
-      >
-        Registrar Usuario
-      </button>
-    </template>
-  </Column>
+        <template #body="slotProps">
+          <span v-if="slotProps.data.usuario && slotProps.data.usuario.name">
+            {{ slotProps.data.usuario.name }}
+          </span>
+          <button v-else  @click="asignarUsuario(slotProps.data)"
+          class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow-md hover:shadow-lg transition-all duration-300">
+            Asignar Usuario
+          </button>
+        </template>
+      </Column>
       <Column :exportable="false" style="min-width: 12rem">
         <template #body="slotProps">
           <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editarEmpleado(slotProps.data)" />
           <Button icon="pi pi-trash" outlined rounded severity="danger" @click="eliminarEmpleado(slotProps.data)" />
+
         </template>
       </Column>
     </DataTable>
@@ -114,22 +112,48 @@
     </template>
   </Dialog>
 
+
+  <!-- Modal para asignar usuario -->
+  <Dialog v-model:visible="usuarioDialog" :modal="true" header="Asignar Usuario" :style="{ width: '500px' }"
+  >
+    <div class="p-fluid formgrid grid">
+      <div>
+        <span class="block font-bold mb-4">Seleccione Usuario</span>
+          <Select v-model="empleado.usuario" editable :options="usuarios" optionLabel="name"
+                    optionValue="id" placeholder="Seleccione un usuario" class="w-full" />
+      </div>
+    </div>
+    <template #footer>
+      <div class="flex justify-content-end gap-2">
+        <Button label="Cancelar" icon="pi pi-times" text @click="resetForm" class="p-button-text" />
+        <Button label="Guardar" icon="pi pi-check" @click="guardarUsuarioEmpleado" class="p-button-primary" />
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import empleadoService from "./../../../services/empleado.service";
-import { DataTable, Column, Dialog, InputText, Button, Dropdown } from "primevue";
+import usuarioService from "./../../../services/usuario.service";
+
+//import { DataTable, Column, Dialog, InputText, Button, Dropdown } from "primevue";
 import { useToast } from "primevue/usetoast";
 import Swal from 'sweetalert2'
 
+
+const assignUserDialogVisible = ref(false);
+const selectedEmpleadoId = ref(null);
 const empleados = ref([]);
+const usuarios = ref([]);
 const empleado = ref({})
+const usuario = ref({})
 const loading = ref(false);
 const totalRecords = ref(0)
 const buscar = ref("")
 const submitted = ref(false);
 const empleadoDialog = ref(false);
+const usuarioDialog = ref(false);
 const lazyParams = ref({});
 const toast = useToast();
 const dt = ref();
@@ -144,6 +168,7 @@ onMounted(() => {
     sortOrder: null,
   };
   getEmpleados()
+  getUsuarios()
 })
 
 watch(empleado, (nuevoEmpleado) => {
@@ -155,6 +180,12 @@ watch(empleado, (nuevoEmpleado) => {
   if (nuevoEmpleado.correo) errores.value.correo = null;
 }, { deep: true });
 
+// Computed property para filtrar los usuarios disponibles
+const usuariosDisponibles = computed(() => {
+  return usuarios.value.filter(usuario => {
+    return !empleados.value.some(empleado => empleado.user_id === usuario.id);
+  });
+});
 const cargos = [
   { label: "Técnico", value: "tecnico" },
   { label: "Soporte Técnico", value: "soporte_tecnico" },
@@ -172,7 +203,6 @@ const getEmpleados = async () => {
   loading.value = true;
   try {
     const { data } = await empleadoService.listar(lazyParams.value.page + 1, lazyParams.value.rows, buscar.value);
-    console.log(data);
     empleados.value = data.data;
     totalRecords.value = data.total;
     // loading.value = false
@@ -182,6 +212,18 @@ const getEmpleados = async () => {
     loading.value = false;
   }
 };
+const getUsuarios = async () => {
+  try {
+    const { data } = await usuarioService.listar();
+
+    usuarios.value = data;
+    console.log(usuarios.value)
+  } catch (error) {
+    console.log(error);
+    // alert("Error al recuperar los datos de usuarios");
+  }
+};
+
 const nuevoEmpleado = () => {
   empleado.value = {};
   submitted.value = false;
@@ -190,6 +232,11 @@ const nuevoEmpleado = () => {
 const editarEmpleado = (datos) => {
   empleado.value = datos;
   empleadoDialog.value = true;
+}
+
+const asignarUsuario = (datos) => {
+  empleado.value = datos;
+  usuarioDialog.value = true;
 }
 
 const onPage = (event) => {
@@ -224,6 +271,40 @@ const guardarEmpleado = async () => {
     }
   }
 }
+
+
+const guardarUsuarioEmpleado = async () => {
+  // Verificar si el empleado tiene un ID
+  if (!empleado.value.id) {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Empleado no encontrado.' });
+    return;
+  }
+
+  try {
+    // Datos a enviar al backend
+    const datos = {
+      user_id: empleado.value.usuario,
+    };
+    // Llamar al servicio para asignar usuario
+    const response = await empleadoService.asignarUsuario(empleado.value.id, datos);
+
+    // Mensaje de éxito si la respuesta es correcta
+    toast.add({ severity: 'success', summary: 'Éxito', detail: response.data.message });
+
+    // Cerrar el modal
+    usuarioDialog.value = false;
+
+    // Recargar datos de empleados y usuarios
+    await getEmpleados(); // Asegúrate de que esta función esté definida y sea un `async` si realiza llamadas a la API
+    await getUsuarios(); // Lo mismo aquí
+
+  } catch (error) {
+    // Manejar errores y mostrar mensaje adecuado
+    console.error("Error al asignar usuario:", error.response?.data || error.message);
+    const errorMessage = error.response?.data?.message || 'No se pudo asignar el usuario.';
+    toast.add({ severity: 'error', summary: 'Error', detail: errorMessage });
+  }
+};
 
 
 const eliminarEmpleado = async (empleado) => {
@@ -264,5 +345,6 @@ const resetForm = () => {
   empleado.value = {};    // Reinicia el modelo de la categoría
   empleadoDialog.value = false; // Cierra el modal
 };
+
 
 </script>

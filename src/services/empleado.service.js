@@ -18,5 +18,8 @@ export default {
     },
     listarCategoria: () => {
         return Api().get(`/empleado-listar`);
-    }
+    },
+    asignarUsuario: (id, datos) => {
+        return Api().put(`/empleado/${id}/assign-user`, datos); // Ajustar la ruta
+    },
 }
