@@ -38,8 +38,12 @@
         <Column field="tipo" header="CLASIFICACION" sortable style="min-width: 10   rem"></Column>
         <Column header="IMAGEN">
             <template #body="slotProps">
-                <Image :src="`http://127.0.0.1:8000/${slotProps.data.imagen}`" alt="slotProps.data.imagen" width="80"
-                    preview />
+                <Image
+                :src="getImageUrl(slotProps.data.imagen)"
+                alt="Imagen del producto"
+                style="width: 60px; height: 60px; object-fit: cover;"
+                preview
+            />
             </template>
         </Column>
         <Column field="precio_compra" header="PRECIO COMPRA" sortable style="min-width: 5rem">
@@ -61,7 +65,8 @@
         </Column>
     </DataTable>
 
-    <Dialog v-model:visible="productDialog2" :style="{ width: '650px' }" header="Producto" :modal="true">
+    <Dialog v-model:visible="productDialog2" :style="{ width: '450px' }" header="Producto" :modal="true"
+        @hide="resetForm">
 
         <div class="flex flex-col gap-2">
             <img v-if="product.image" :src="`https://primefaces.org/cdn/primevue/images/product/${product.image}`"
@@ -70,15 +75,22 @@
             <div>
 
                 <span class="block font-bold mb-4">Categoria</span>
-                <Select v-model="product.categoria_id" editable :options="categorias" optionLabel="nombre"
+                <Select v-model="product.categoria_id" :options="categorias" optionLabel="nombre"
+                    :invalid="submitted && !product.categoria_id" fluid :class="{ 'p-invalid': errores.categoria_id }"
                     optionValue="id" placeholder="Seleccionar una categoria" class="w-full md:w-70" />
-
+                <small v-if="submitted && !product.categoria_id" class=" text-red-500">El nombre de la categoria es
+                    obligatorio</small>
+                <small v-if="errores.categoria_id" class="p-error text-red-500">{{ errores.categoria_id[0] }}
+                </small>
             </div>
             <div>
                 <label for="name" class="block font-bold mb-3">Nombre</label>
                 <InputText id="name" v-model.trim="product.nombre" required="true" autofocus
-                    :invalid="submitted && !product.nombre" fluid />
-                <small v-if="submitted && !product.nombre" class="text-red-500">El nombre es Oblogatorio.</small>
+                    :invalid="submitted && !product.nombre" fluid :class="{ 'p-invalid': errores.nombre }" />
+                <small v-if="submitted && !product.nombre" class="text-red-500">El nombre del producto es
+                    obligatorio</small>
+                <small v-if="errores.nombre" class="p-error text-red-500">{{ errores.nombre[0] }}
+                </small>
             </div>
             <div>
                 <label for="description" class="block font-bold mb-3">Descripción</label>
@@ -88,12 +100,12 @@
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-6">
                     <label for="price_compra" class="block font-bold mb-3">Precio Compra</label>
-                    <InputNumber id="price" v-model="product.precio_compra" mode="currency" currency="SOL"
-                        locale="en-ES" fluid />
+                    <InputNumber id="price" v-model="product.precio_compra" mode="currency" currency="PEN"
+                        locale="es-PE" fluid />
                 </div>
                 <div class="col-span-6">
                     <label for="price_venta" class="block font-bold mb-3">Precio Venta</label>
-                    <InputNumber id="price" v-model="product.precio_venta" mode="currency" currency="SOL" locale="en-ES"
+                    <InputNumber id="price" v-model="product.precio_venta" mode="currency" currency="PEN" locale="es-PE"
                         fluid />
                 </div>
 
@@ -101,7 +113,11 @@
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-6">
                     <label for="unidad_medida" class="block font-bold mb-3">Unidad Medida</label>
-                    <InputText id="unidad_medida" v-model="product.unidad_medida" fluid />
+                    
+
+                    <Dropdown id="unidad_medida"  v-model="product.unidad_medida" :options="unidad_medida" option-label="label"
+                            option-value="value" placeholder="Seleccione la unidad de medida"
+                            class="w-full" />
                 </div>
                 <div class="col-span-6">
                     <label for="cantidad_medida" class="block font-bold mb-3">Cantidad Medida</label>
@@ -135,7 +151,7 @@
                     </div>
                     <div v-if="imagenPreview" class="col-span-6">
                         <!-- Previsualización de la imagen -->
-                        <img :src="imagenPreview" alt="Previsualización"
+                        <img :src="imagenPreview" alt="Previsualización" ref="fileInputRef"
                             class="w-32 h-32 object-cover rounded-md border">
                     </div>
 
@@ -144,16 +160,18 @@
         </div>
 
         <template #footer>
-            <Button label="Cancelar" icon="pi pi-times" text @click="hideDialog" />
+            <Button label="Cancelar" icon="pi pi-times" @click="resetForm" />
             <Button label="Guardar" icon="pi pi-check" @click="guardarProductoConImagen()" />
         </template>
     </Dialog>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import productoService from "./../../../services/producto.service"
 import categoriaService from "./../../../services/categoria.service"
+import { useToast } from "primevue/usetoast";
+import Swal from 'sweetalert2'
 
 
 const products = ref([]);
@@ -167,9 +185,11 @@ const product = ref({})
 const categorias = ref([])
 const productDialog2 = ref(false)
 const imagenPreview = ref(null); // Estado para la previsualización
-
+const errores = ref({}); // Objeto para almacenar errores del backend
+const toast = useToast();
 const dt = ref();
-
+const defaultImage = "http://127.0.0.1:8000/storage/imagenes/sin-imagen.png";
+const fileInputRef = ref(null);
 
 onMounted(() => {
     loading.value = true;
@@ -185,9 +205,24 @@ onMounted(() => {
     getCategorias()
 })
 
+watch(product, (nuevoProducto) => {
+    // Limpia los errores al corregir el campo
+    if (nuevoProducto.nombre) errores.value.nombre = null;
+    if (nuevoProducto.id_categoria) errores.value.id_categoria = null;
+}, { deep: true });
+
+
 const exportCSV = () => {
     dt.value.exportCSV();
 };
+
+const unidad_medida = [
+  { label: "unidad", value: "unidad" },
+  { label: "rollo", value: "rollo" },
+  { label: "caja", value: "caja" },
+  { label: "metro", value: "metro" },
+  { label: "paquete", value: "paquete" },
+];
 
 
 const tipo_producto = [
@@ -196,10 +231,15 @@ const tipo_producto = [
 ];
 
 const formatCurrency = (value) => {
-    if (value)
-        return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    return;
+    if (value) {
+        return value.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' });
+    }
+    return "S/ 0.00";
 };
+
+const getImageUrl = (imagen) => {
+            return imagen ? `http://127.0.0.1:8000/${imagen}` : defaultImage;
+        };
 
 const getProductos = async () => {
     loading.value = true;
@@ -223,18 +263,13 @@ const onPage = (event) => {
     getProductos(event);
 };
 
-const nuevoProducto = () => {
-    product.value = {};
-    submitted.value = false;
-    productDialog.value = true;
-}
 
 const nuevoProductoConImagen = () => {
     product.value = {};
     submitted.value = false;
     productDialog2.value = true;
 }
-
+/*
 const guardarProducto = async () => {
 
     submitted.value = true;
@@ -252,6 +287,9 @@ const guardarProducto = async () => {
 
 }
 /*
+
+
+/*
 const seleccionarImagen = (event) => {
     console.log(event.target.files[0]);
     product.value.imagen = event.target.files[0]
@@ -259,6 +297,10 @@ const seleccionarImagen = (event) => {
 const seleccionarImagen = (event) => {
     const file = event.target.files[0]; // Obtener el archivo seleccionado
     if (file) {
+
+        if (imagenPreview.value) {
+            URL.revokeObjectURL(imagenPreview.value);
+        }
         // Crear una URL temporal para la previsualización
         imagenPreview.value = URL.createObjectURL(file);
         product.value.imagen = file; // Guardar el archivo en el producto
@@ -272,52 +314,90 @@ const guardarProductoConImagen = async () => {
         try {
             const formdata = new FormData();
             formdata.append("nombre", product.value.nombre);
-            formdata.append("descripcion", product.value.descripcion);
+            formdata.append("descripcion", product.value.descripcion || "");
             formdata.append("precio_compra", product.value.precio_compra || 0);
             formdata.append("precio_venta", product.value.precio_venta || 0);
-            formdata.append("unidad_medida", product.value.unidad_medida);
+            formdata.append("unidad_medida", product.value.unidad_medida );
             formdata.append("tipo", product.value.tipo);
-            formdata.append("cantidad_medida", product.value.cantidad_medida || 0);
+            formdata.append("cantidad_medida", product.value.cantidad_medida || 1);
             formdata.append("stock", product.value.stock || 0);
             formdata.append("imagen", product.value.imagen || null);
             formdata.append("categoria_id", product.value.categoria_id);
             if (product.value.id) {
-
                 formdata.append("_method", "PUT");
-
                 await productoService.modificar(product.value.id, formdata);
-                productDialog2.value = false
+                toast.add({ severity: 'success', summary: 'Producto actualizado correctamente', life: 3000 });
+
+
             } else {
                 await productoService.guardarConImagen(formdata);
-                productDialog2.value = false
+                toast.add({ severity: 'success', summary: 'Producto agregado correctamente', life: 3000 });
             }
-
             getProductos();
-
+            productDialog2.value = false
+            product.value = {};
 
         } catch (error) {
-            console.log("ERROR: ", error);
+            if (error.response && error.response.data.errors) {
+                errores.value = error.response.data.errors; // Captura los errores del backend
+            }
+
         }
-
     }
-
 }
 const editProduct = (datos) => {
     product.value = datos;
     productDialog2.value = true;
 }
 
-const confirmDeleteProduct = async (prod) => {
+const confirmDeleteProduct = async (producto) => {
     try {
-        if (confirm("¿Está seguro de eliminar el Producto?")) {
-            await productoService.eliminar(prod.id);
+        const result = await Swal.fire({
+            title: "¿Estás seguro?",
+            text: "¡No podrás revertir esta acción!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar"
+        });
 
-            getProductos();
+        if (result.isConfirmed) {
+            await productoService.eliminar(producto.id); // Llamada al servicio para eliminar
+
+            await Swal.fire({
+                title: "¡Eliminado!",
+                text: "El producto ha sido eliminada correctamente.",
+                icon: "success",
+            });
+            await getProductos();
         }
-
     } catch (error) {
-        console.log(error);
+        console.error("Error al eliminar el producto:", error);
+        Swal.fire({
+            title: "Error",
+            text: "Ocurrió un problema al intentar eliminar el producto.",
+            icon: "error",
+        });
     }
-}
+};
+
+const resetForm = () => {
+    submitted.value = false; // Reinicia la validación del frontend
+    errores.value = {};       // Limpia los errores del backend
+    product.value = {};    // Reinicia el modelo de la categoría
+    productDialog2.value = false; // Cierra el modal
+    // Reinicia el campo de archivo (imagen)
+    if (imagenPreview.value) {
+        URL.revokeObjectURL(imagenPreview.value);
+        imagenPreview.value = null; // Reinicia la previsualización
+    }
+    if (fileInputRef.value) {
+        fileInputRef.value.value = null; // Esto limpia el valor del input file
+    }
+};
+
+
 
 </script>

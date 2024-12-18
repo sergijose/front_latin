@@ -25,7 +25,8 @@ const model = ref([
         icon: 'pi pi-fw pi-briefcase',
         items: [
             { label: 'Categoria', icon: 'pi pi-fw pi-id-card', to: '/admin/categoria' },
-            { label: 'Producto', icon: 'pi pi-fw pi-check-square', to: '/admin/producto' }            
+            { label: 'Producto', icon: 'pi pi-tag', to: '/admin/producto' },
+            { label: 'Producto detalle', icon: 'pi pi-qrcode', to: '/admin/producto-detalle' }               
         ]
     },
     {
