@@ -13,10 +13,11 @@
     </Toolbar>
 
     <DataTable ref="dt" :value="products" dataKey="id" lazy :totalRecords="totalRecords" :loading="loading"
-        tableStyle="min-width: 50rem" :paginator="true" :rows="10" @page="onPage($event)"
+        tableStyle="min-width: 100rem; font-size: 0.85rem;" :paginator="true" :rows="10" @page="onPage($event)"
         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
         :rowsPerPageOptions="[3, 10, 25]"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos">
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos" class="p-datatable-sm"
+        scrollable>
         <template #header>
             <div class="flex flex-wrap gap-2 items-center justify-between">
                 <h4 class="m-0">Gestión Productos</h4>
@@ -30,20 +31,66 @@
         </template>
 
         <!-- <Column field="id" header="ID" sortable style="min-width: 3rem"></Column>-->
+        <Column header="IMAGEN">
+            <template #body="slotProps">
+                <Image :src="getImageUrl(slotProps.data.imagen)" alt="Imagen del producto"
+                    style="width: 60px; height: 60px; object-fit: cover;" preview />
+            </template>
+        </Column>
         <Column field="categoria.nombre" header="CATEGORIA" sortable style="min-width: 6rem"></Column>
         <Column field="nombre" header="NOMBRE" sortable style="min-width: 12rem"></Column>
         <Column field="descripcion" header="DESCRIPCION" sortable style="min-width: 16rem"></Column>
-        <Column field="unidad_medida" header="UNIDAD MEDIDA" sortable style="min-width: 14rem"></Column>
-        <Column field="stock" header="STOCK" sortable style="min-width: 14rem"></Column>
-        <Column field="tipo" header="CLASIFICACION" sortable style="min-width: 10   rem"></Column>
-        <Column header="IMAGEN">
+        <Column field="unidad_medida" header="UNIDAD MEDIDA" sortable style="min-width: 14rem">
             <template #body="slotProps">
-                <Image
-                :src="getImageUrl(slotProps.data.imagen)"
-                alt="Imagen del producto"
-                style="width: 60px; height: 60px; object-fit: cover;"
-                preview
-            />
+                <span v-if="slotProps.data.unidad_medida === 'unidad'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#ffcccb', color: '#800000' }">
+                    <i class="pi pi-tag mr-2"></i> Unidad
+                </span>
+                <span v-else-if="slotProps.data.unidad_medida === 'rollo'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#d4edda', color: '#155724' }">
+                    <i class="pi pi-circle mr-2"></i> Rollo
+                </span>
+                <span v-else-if="slotProps.data.unidad_medida === 'caja'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#cce5ff', color: '#004085' }">
+                    <i class="pi pi-box mr-2"></i> Caja
+                </span>
+                <span v-else-if="slotProps.data.unidad_medida === 'metro'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#fff3cd', color: '#856404' }">
+                    <i class="pi pi-arrows-h mr-2"></i> Metro
+                </span>
+                <span v-else-if="slotProps.data.unidad_medida === 'paquete'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#f2f2f2', color: '#333333' }">
+                    <i class="pi pi-tags mr-2"></i> Paquete
+                </span>
+            </template>
+        </Column>
+
+        <Column field="stock" header="STOCK" sortable style="min-width: 10rem">
+            <template #body="slotProps">
+                <span class="px-2 py-1 rounded-lg text-white" :style="{ backgroundColor: '#d4edda', color: '#155724' }">
+                    {{ slotProps.data.stock }}
+                </span>
+            </template>
+        </Column>
+        <Column field="tipo" header="TIPO" sortable style="min-width: 14rem">
+            <template #body="slotProps">
+                <span v-if="slotProps.data.tipo === 'individual'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#cce5ff', color: '#004085' }">
+                    <i class="pi pi-tag mr-2"></i> <!-- Ícono para individual -->
+                    Individual
+                </span>
+                <span v-else-if="slotProps.data.tipo === 'general'"
+                    class="flex items-center px-2 py-1 rounded-lg text-white"
+                    :style="{ backgroundColor: '#e2e3e5', color: '#383d41' }">
+                    <i class="pi pi-box mr-2"></i> <!-- Ícono para general -->
+                    General
+                </span>
             </template>
         </Column>
         <Column field="precio_compra" header="PRECIO COMPRA" sortable style="min-width: 5rem">
@@ -113,11 +160,11 @@
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-6">
                     <label for="unidad_medida" class="block font-bold mb-3">Unidad Medida</label>
-                    
 
-                    <Dropdown id="unidad_medida"  v-model="product.unidad_medida" :options="unidad_medida" option-label="label"
-                            option-value="value" placeholder="Seleccione la unidad de medida"
-                            class="w-full" />
+
+                    <Dropdown id="unidad_medida" v-model="product.unidad_medida" :options="unidad_medida"
+                        option-label="label" option-value="value" placeholder="Seleccione la unidad de medida"
+                        class="w-full" />
                 </div>
                 <div class="col-span-6">
                     <label for="cantidad_medida" class="block font-bold mb-3">Cantidad Medida</label>
@@ -217,11 +264,11 @@ const exportCSV = () => {
 };
 
 const unidad_medida = [
-  { label: "unidad", value: "unidad" },
-  { label: "rollo", value: "rollo" },
-  { label: "caja", value: "caja" },
-  { label: "metro", value: "metro" },
-  { label: "paquete", value: "paquete" },
+    { label: "unidad", value: "unidad" },
+    { label: "rollo", value: "rollo" },
+    { label: "caja", value: "caja" },
+    { label: "metro", value: "metro" },
+    { label: "paquete", value: "paquete" },
 ];
 
 
@@ -238,8 +285,8 @@ const formatCurrency = (value) => {
 };
 
 const getImageUrl = (imagen) => {
-            return imagen ? `http://127.0.0.1:8000/${imagen}` : defaultImage;
-        };
+    return imagen ? `http://127.0.0.1:8000/${imagen}` : defaultImage;
+};
 
 const getProductos = async () => {
     loading.value = true;
@@ -317,7 +364,7 @@ const guardarProductoConImagen = async () => {
             formdata.append("descripcion", product.value.descripcion || "");
             formdata.append("precio_compra", product.value.precio_compra || 0);
             formdata.append("precio_venta", product.value.precio_venta || 0);
-            formdata.append("unidad_medida", product.value.unidad_medida );
+            formdata.append("unidad_medida", product.value.unidad_medida);
             formdata.append("tipo", product.value.tipo);
             formdata.append("cantidad_medida", product.value.cantidad_medida || 1);
             formdata.append("stock", product.value.stock || 0);

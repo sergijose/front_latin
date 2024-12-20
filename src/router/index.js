@@ -11,6 +11,7 @@ import Perfil from "../views/admin/Perfil.vue"
 import Usuario from "../views/admin/usuario/Usuario.vue"
 import Categoria from "../views/admin/categoria/Categoria.vue"
 import Producto from "../views/admin/producto/Producto.vue"
+import ProductoDetalle from "../views/admin/producto_detalle/ProductoDetalle.vue"
 import NuevoPedido from "../views/admin/pedido/nuevo-pedido/NuevoPedido.vue"
 import ListaPedido from "../views/admin/pedido/lista-pedido/ListaPedido.vue"
 import Proveedor from "../views/admin/proveedor/Proveedor.vue";
@@ -35,6 +36,7 @@ const routes = [
             { path: 'empleado', name: 'Empleado', component: Empleado, meta: {requireAuth: true} },
             { path: 'categoria', name: 'Categoria', component: Categoria, meta: {requireAuth: true} },
             { path: 'producto', name: 'Producto', component: Producto, meta: {requireAuth: true} },
+            { path: 'producto-detalle', name: 'ProductoDetalle', component: ProductoDetalle, meta: {requireAuth: true} },
             { path: 'proveedor', name: 'Proveedor', component: Proveedor, meta: {requireAuth: true} },
             { path: 'pedido/nuevo', name: 'NuevoPedido', component: NuevoPedido, meta: {requireAuth: true} },
             { path: 'pedido', name: 'ListaPedido', component: ListaPedido, meta: {requireAuth: true} },

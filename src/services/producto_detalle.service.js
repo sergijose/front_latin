@@ -11,7 +11,7 @@ export default {
         return Api().get(`/producto-detalle/${id}`);
     },
     modificar: (id, datos) => {
-        return Api().post(`/producto-detalle/${id}`, datos);
+        return Api().put(`/producto-detalle/${id}`, datos);
     },
     eliminar: (id) => {
         return Api().delete(`/producto-detalle/${id}`);
